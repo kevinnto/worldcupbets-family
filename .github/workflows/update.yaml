@@ -7,7 +7,7 @@ on:
   schedule:
     # Every 10 minutes (UTC). World Cup matches play US afternoon/evening,
     # which is European night/early morning, so this covers same-day refresh.
-    - cron: '13,28,43,58 * * * *'
+    - cron: '9,24,39,54 * * * *'
   workflow_dispatch: {}
 
 # Required so the job can push the updated data files back to the repo.
