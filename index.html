@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VM 2026 · Betting </title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('wc2026_theme') ||
+          (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+    })();
+  </script>
+  <meta name="description" content="Världscupen 2026 — spelschema, grupptabeller, slutspelsträd och bettingligan för gänget. Svensk tid, uppdateras dagligen." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Sora:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/app.js" defer></script>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;display:none" aria-hidden="true"></canvas>
+
+  <header class="hero">
+    <div class="hero-stripes" aria-hidden="true"></div>
+    <button id="theme-toggle" class="theme-toggle" aria-label="Växla ljust/mörkt tema" title="Ljust/mörkt tema">🌙</button>
+    <div class="hero-inner">
+      <div class="hero-tag">FIFA WORLD CUP · USA · KANADA · MEXIKO</div>
+      <h1 class="hero-title">VM&nbsp;<span class="yr">2026</span></h1>
+      <p class="hero-sub">Gänget mot bookmakern · alla tider i svensk tid 🇸🇪</p>
+      <div id="countdown" class="countdown-chip">⚽ Laddar nästa match…</div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="schedule">📅 Spelschema</button>
+    <button class="tab" data-view="groups">📊 Grupper</button>
+    <button class="tab" data-view="bracket">🏆 Slutspel</button>
+    <button class="tab" data-view="money">💰 Stålarna</button>
+    <button class="tab" data-view="tips">🔮 Tippa</button>
+  </nav>
+
+  <div id="stats-bar" class="stats-bar" aria-live="polite"></div>
+
+  <main id="app">
+    <!-- SCHEDULE -->
+    <section class="view active" id="view-schedule">
+      <div class="view-head">
+        <h2 class="view-title">Spelschema</h2>
+        <div class="seg" id="schedule-filter">
+          <button class="seg-btn active" data-f="all">Allt</button>
+          <button class="seg-btn" data-f="GROUP">Gruppspel</button>
+          <button class="seg-btn" data-f="KO">Slutspel</button>
+        </div>
+      </div>
+      <div class="sched-controls">
+        <label class="sc-fav">⭐ Mitt lag<select id="fav-team"></select></label>
+        <label class="sc-only"><input type="checkbox" id="only-fav"> Visa bara mitt lag</label>
+      </div>
+      <div id="schedule-body" class="schedule-body"></div>
+    </section>
+
+    <!-- GROUPS -->
+    <section class="view" id="view-groups">
+      <div class="view-head"><h2 class="view-title">Grupptabeller</h2></div>
+      <p class="hint">Topp 2 går vidare direkt · de 8 bästa treorna kvalar också in. Uppdateras automatiskt när resultaten kommer in.</p>
+      <div id="groups-body" class="groups-grid"></div>
+    </section>
+
+    <!-- BRACKET -->
+    <section class="view" id="view-bracket">
+      <div class="view-head"><h2 class="view-title">Slutspelsträd</h2></div>
+      <p class="hint">Lagen fylls i automatiskt allt eftersom grupperna avgörs och vinnare avancerar. Träd från båda håll på dator, vertikalt på mobil.</p>
+      <div id="bracket-body" class="bracket-scroll"></div>
+    </section>
+
+    <!-- MONEY -->
+    <section class="view" id="view-money">
+      <div class="view-head"><h2 class="view-title">Stålarna 💰</h2></div>
+
+      <div id="leader-card" class="leader-card"></div>
+      <p class="board-hint">👆 Klicka på en spelare för att se historik och vad hen satsade på</p>
+      <div id="standings-money" class="money-board"></div>
+
+      <div class="chart-wrap">
+        <div class="chart-head">
+          <h3>Kapitalkurva — alla spelare + index</h3>
+          <span class="chart-note">Saldo i slutet av varje dag · alla startar på 200 SEK · OMXS30 och S&amp;P 500 normaliserade till 200 · håll muspekaren/fingret över en linje för att markera den</span>
+        </div>
+        <div id="index-chips" class="index-chips"></div>
+        <div class="chart-box"><canvas id="moneyChart"></canvas></div>
+        <div id="chart-legend" class="chart-legend"></div>
+      </div>
+
+      <div class="submit-card">
+        <div class="submit-head">
+          <h3>Fyll i ditt saldo</h3>
+          <span id="backend-status" class="backend-status"></span>
+        </div>
+        <p class="hint">Välj spelare och dag, skriv in hur mycket du har <strong>i slutet av dagen</strong> och spara. Du kan även skriva vad du satsade på. Fel värde? Välj samma spelare och dag igen så fylls det i — ändra och uppdatera.</p>
+        <div class="submit-grid">
+          <label class="fld">Spelare<select id="f-player"></select></label>
+          <label class="fld">Dag<select id="f-date"></select></label>
+          <label class="fld">Saldo i slutet av dagen (SEK)<input id="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="t.ex. 250 eller 249,50"></label>
+          <button id="f-submit" class="btn btn-primary">✅ Spara</button>
+        </div>
+        <label class="fld fld-note">Vad satsade du på? <span class="opt">(valfritt)</span><input id="f-note" type="text" maxlength="140" placeholder="t.ex. Sverige vinner grupp F · Brasilien -1.5 · over 2.5 mål"></label>
+        <div id="submit-msg" class="submit-msg"></div>
+        <div id="export-row" class="export-row hidden">
+          <button id="export-json" class="btn btn-ghost">⬇️ Ladda ner betting.json</button>
+          <span class="hint" style="margin:0">Lokalt läge: dela med gänget genom att committa filen</span>
+        </div>
+        <details id="firebase-guide" class="firebase-guide hidden">
+          <summary class="fg-summary">🔴 Lokalt läge · Koppla upp live på ~10 minuter</summary>
+          <ol class="setup-steps">
+            <li>
+              <strong>Skapa ett Firebase-projekt</strong>
+              <p>Gå till <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> · klicka <em>Add project</em> · välj ett namn · klicka dig igenom stegen · <em>Create project</em>.</p>
+            </li>
+            <li>
+              <strong>Aktivera Realtime Database</strong>
+              <p>I vänstermenyn: <em>Build → Realtime Database → Create database</em>. Välj närmaste region (t.ex. europe-west1). Välj <em>Start in locked mode</em> · klicka <em>Enable</em>.</p>
+            </li>
+            <li>
+              <strong>Uppdatera säkerhetsreglerna</strong>
+              <p>Klicka på fliken <em>Rules</em> · radera allt · klistra in nedanstående · klicka <em>Publish</em>.</p>
+              <pre class="fg-code">{
+  "rules": {
+    "balances": {
+      ".read": true,
+      ".write": true,
+      "$date": { "$player": {
+        ".validate": "newData.isNumber() &amp;&amp; newData.val() &gt;= 0"
+      } }
+    },
+    "bets": {
+      ".read": true,
+      ".write": true,
+      "$date": { "$player": {
+        ".validate": "newData.isString() &amp;&amp; newData.val().length &lt;= 200"
+      } }
+    }
+  }
+}</pre>
+            </li>
+            <li>
+              <strong>Hämta din konfiguration</strong>
+              <p>Klicka på kugghjulet (⚙) → <em>Project settings</em> → rulla ned till <em>Your apps</em> → klicka webb-ikonen <em>&lt;/&gt;</em> → registrera appen med valfritt namn → kopiera det <code>firebaseConfig</code>-objekt som visas.</p>
+            </li>
+            <li>
+              <strong>Klistra in och committa</strong>
+              <p>Öppna <code>js/config.js</code> i repot → ersätt hela <code>window.FIREBASE_CONFIG = {…}</code> med din kopierade config → committa och pusha. Kom tillbaka hit och ladda om — statusindikatorn ovan ska bli <strong>🟢 Live</strong>.</p>
+              <p class="fg-note">⚠️ Kom ihåg att sätta <em>Workflow permissions → Read and write</em> under Settings → Actions i repot, annars kan GitHub Actions inte spara resultatdata.</p>
+            </li>
+          </ol>
+        </details>
+      </div>
+
+      <div id="awards" class="awards"></div>
+
+      <div class="compare-card">
+        <div class="submit-head"><h3>⚔️ Head-to-head</h3></div>
+        <p class="hint">Välj vilka som ska visas — jämför kurvor mot varandra och mot index</p>
+        <div id="compare-chips" class="compare-chips"></div>
+        <div class="cmp-box"><canvas id="compareChart"></canvas></div>
+      </div>
+
+      <details class="history-wrap">
+        <summary>Visa full historik per dag</summary>
+        <div id="editor-grid" class="editor-grid-wrap"></div>
+      </details>
+    </section>
+
+    <!-- TIPS (prediction game) -->
+    <section class="view" id="view-tips">
+      <div class="view-head">
+        <h2 class="view-title">Tippa 🔮</h2>
+        <span id="tip-deadline" class="tip-deadline"></span>
+      </div>
+      <p class="hint" id="tip-intro"></p>
+      <details class="tip-rules">
+        <summary>📐 Så funkar poängen</summary>
+        <div id="tip-rules-body"></div>
+      </details>
+
+      <div id="tip-entry" class="tip-entry"></div>
+
+      <div class="tip-board-card">
+        <div class="submit-head"><h3>🏆 Tipsligan</h3></div>
+        <p class="board-hint" id="tip-board-hint"></p>
+        <div id="tip-board"></div>
+      </div>
+
+      <div id="tip-audit" class="tip-audit"></div>
+    </section>
+  </main>
+
+  <div id="player-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close" aria-label="Stäng">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+</body>
+</html>

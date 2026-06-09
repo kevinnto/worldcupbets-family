@@ -1,0 +1,51 @@
+name: Update WC2026 data
+
+# Fetches match results + OMXS30 closes and commits the refreshed JSON.
+# Runs on a schedule and can be triggered manually from the Actions tab.
+
+on:
+  schedule:
+    # Every 10 minutes (UTC). World Cup matches play US afternoon/evening,
+    # which is European night/early morning, so this covers same-day refresh.
+    - cron: '13,28,43,58 * * * *'
+  workflow_dispatch: {}
+
+# Required so the job can push the updated data files back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch results and OMXS30
+        env:
+          # Optional: add a free token at football-data.org and store it as a
+          # repo secret named FOOTBALL_DATA_TOKEN for the most reliable scores.
+          # If absent, the script falls back to the free TheSportsDB key.
+          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+        run: python scripts/update_data.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "wc2026-bot"
+          git config user.email "actions@github.com"
+          git add data/results.json data/omx.json data/sp500.json
+          if git diff --staged --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "data: refresh results + OMXS30 [skip ci]"
+            git push
+          fi

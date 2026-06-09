@@ -1,0 +1,10 @@
+{
+  "startAmount": 200,
+  "currency": "SEK",
+  "players": ["Kevin", "Pappa"],
+  "note": "balances[date][player] = saldo i SLUTET av dagen. bets[date][player] = vad personen satsade pa (valfritt). Alla startar pa 200 SEK.",
+  "balances": {
+    "2026-06-10": { "Kevin": 200, "Pappa": 200 }
+  },
+  "bets": {}
+}
