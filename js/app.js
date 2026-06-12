@@ -1181,7 +1181,7 @@ function nowDate() { return new Date(); }
 function predictionDeadline() {
   // Extended: Phase 1 stays open through the end of 13 June (Europe/Stockholm),
   // but individual matches lock as they kick off (see buildTipForm) so already-played games can't be backfilled.
-  return new Date('2026-06-13T23:59:59+02:00');
+  return new Date('2026-06-12T23:59:59+02:00');
 }
 function predictionsLocked() { return nowDate().getTime() >= predictionDeadline().getTime(); }
 
