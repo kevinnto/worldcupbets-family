@@ -1179,8 +1179,8 @@ let _auditPlayer = null;
 
 function nowDate() { return new Date(); }
 function predictionDeadline() {
-  // Extended: Phase 1 stays open through the end of 13 June (Europe/Stockholm),
-  // but individual matches lock as they kick off (see buildTipForm) so already-played games can't be backfilled.
+  // Phase 1 stays open through the end of 12 June (Europe/Stockholm); individual matches
+  // still lock as they kick off (see buildTipForm) so already-played games can't be backfilled.
   return new Date('2026-06-12T23:59:59+02:00');
 }
 function predictionsLocked() { return nowDate().getTime() >= predictionDeadline().getTime(); }
@@ -1410,7 +1410,7 @@ function renderTips() {
   const intro = document.getElementById('tip-intro');
   if (intro) intro.textContent = locked
     ? 'Tippningen är stängd. Poängen räknas löpande när matcherna spelas. Klicka på en spelare i ligan för att granska allas tips.'
-    : 'Tippa alla gruppspelsmatcher, gruppvinnare, finalister och VM-vinnare före första avsparken. Slutspelslagen tippas i en andra omgång när gruppspelet är klart. Andras tips visas först när tippningen stänger.';
+    : 'Tippa alla gruppspelsmatcher, gruppvinnare, finalister och VM-vinnare innan tippningen stänger (se nedräkningen ovan). Matcher som redan startat är låsta. Slutspelslagen tippas i en andra omgång när gruppspelet är klart. Andras tips visas först när tippningen stänger.';
   renderTipRules();
   const entry = document.getElementById('tip-entry');
   if (entry) {
