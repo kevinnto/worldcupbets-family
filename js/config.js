@@ -24,5 +24,5 @@ window.FIREBASE_CONFIG = {
   projectId: "worldcupbets-family",
   storageBucket: "worldcupbets-family.firebasestorage.app",
   messagingSenderId: "199758537486",
-  appId: "1:199758537486:web:08382a735fbbf47246ed5f",
+  appId: "1:199758537486:web:08382a735fbbf47246ed5f"
 };
