@@ -4,6 +4,8 @@ Daily updater for the VM 2026 tracker. Run by GitHub Actions.
 
 Writes:
   data/results.json  — scores/status keyed by our internal match ids (m1..m104)
+  data/standings.json— official group tables (football-data.org); used for the authoritative
+                       within-group order so the third-placed teams are exactly FIFA's
   data/omx.json      — OMXS30 daily closes (normalised to 200 in the browser)
   data/sp500.json    — S&P 500 daily closes (normalised to 200 in the browser)
 
@@ -16,7 +18,7 @@ OMXS30 source: Stooq CSV (symbol ^OMX), no key needed.
 Nothing here ever deletes existing scores: a failed fetch leaves the file as-is,
 so the website never breaks. You can also edit data/results.json by hand.
 """
-import json, os, re, sys, unicodedata, urllib.request, urllib.error
+import json, os, re, sys, time, unicodedata, urllib.request, urllib.error, urllib.parse
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,7 +26,9 @@ FIXTURES = os.path.join(ROOT, "data", "fixtures.json")
 RESULTS = os.path.join(ROOT, "data", "results.json")
 OMX = os.path.join(ROOT, "data", "omx.json")
 SP500 = os.path.join(ROOT, "data", "sp500.json")
-START_DATE = "2026-06-10"  # day before kickoff, baseline for the index
+STANDINGS = os.path.join(ROOT, "data", "standings.json")
+DISCIPLINE = os.path.join(ROOT, "data", "discipline.json")  # optional manual/feed input (fair-play + override)
+START_DATE = "2026-06-10"  # anchor day for index normalisation (= betting baseline)
 
 ALIASES = {
     "korearepublic": "southkorea", "republicofkorea": "southkorea", "korea": "southkorea",
@@ -297,37 +301,207 @@ def update_results(fixtures):
     print(f"results.json: {gcount} group + {kcount} knockout matched, {len(results['matches'])} total")
 
 
-def update_index(path, stooq_symbol, default_symbol):
-    idx = load(path, {"symbol": default_symbol, "history": []})
-    url = "https://stooq.com/q/d/l/?s=%s&i=d" % stooq_symbol
-    try:
-        csv = http_get(url)
-    except Exception as e:
-        print(f"Stooq {default_symbol} failed: {e}", file=sys.stderr)
-        return
-    rows = [r for r in csv.strip().splitlines() if r and r[0].isdigit()]
-    hist = {x["date"]: x for x in idx.get("history", [])}
-    added = 0
-    for r in rows:
-        parts = r.split(",")
-        if len(parts) < 5:
+def fetch_standings(token, fixtures):
+    """Official group tables from football-data.org -> {grp: {order:[codes], rows:{...}, complete}}.
+
+    Using the provider's order means FIFA's full within-group tiebreakers (head-to-head,
+    fair play) are already applied, so the third-placed team of each group is authoritative.
+    """
+    url = "https://api.football-data.org/v4/competitions/WC/standings"
+    data = json.loads(http_get(url, headers={"X-Auth-Token": token}))
+    code_by_norm = {norm(t["en"]): code for code, t in fixtures["teams"].items()}
+    groups = {}
+    for s in data.get("standings", []):
+        if s.get("type") != "TOTAL":      # skip HOME/AWAY split tables
             continue
-        date, close = parts[0], parts[4]
-        if date < START_DATE or close in ("", "N/D"):
+        grp = (s.get("group") or "").replace("GROUP_", "").replace("Group ", "").strip().upper()
+        if grp not in fixtures["groups"]:
+            continue
+        order, rows, complete = [], {}, True
+        for r in s.get("table", []):
+            code = code_by_norm.get(norm(r.get("team", {}).get("name", "")))
+            if not code:
+                continue
+            order.append(code)
+            rows[code] = {"pts": r.get("points", 0), "gd": r.get("goalDifference", 0),
+                          "gf": r.get("goalsFor", 0), "ga": r.get("goalsAgainst", 0),
+                          "pld": r.get("playedGames", 0), "w": r.get("won", 0),
+                          "d": r.get("draw", 0), "l": r.get("lost", 0)}
+            if r.get("playedGames", 0) < 3:
+                complete = False
+        # only accept a group whose four teams all mapped cleanly
+        if len(order) == len(fixtures["groups"][grp]):
+            groups[grp] = {"order": order, "rows": rows, "complete": complete}
+    return groups
+
+
+# FIFA team-conduct ("fair play") points: only the single worst sanction per player per match counts.
+# Values per FIFA's 2026 regulations: single yellow -1, indirect red (2nd yellow) -3, direct red -4,
+# yellow + direct red (same player, same match) -5. Higher (less negative) total ranks higher.
+FP_VALUES = {"yellow": -1, "yellow_red": -3, "red": -4, "yellow_and_red": -5}
+def fair_play_points(counts):
+    """counts = worst-per-player sanction tallies, e.g. {'yellow':5,'yellow_red':1,'red':0,'yellow_and_red':0}."""
+    return sum(FP_VALUES[k] * int(counts.get(k, 0)) for k in FP_VALUES)
+
+
+def update_standings(fixtures):
+    """Write official group tables, then fold in optional fair-play points and an official thirds
+    override from data/discipline.json (hand-entered, or produced by a paid card-data feed).
+
+    Note: card/booking data is NOT on football-data.org's free tier (deep-data add-on only), so the
+    automatic fair-play tiebreaker only activates if discipline.json supplies it. Everything else
+    (points, goal difference, goals scored, official within-group order) is covered for free.
+    """
+    out = load(STANDINGS, {"groups": {}})
+    token = os.environ.get("FOOTBALL_DATA_TOKEN", "").strip()
+    if token:
+        try:
+            g = fetch_standings(token, fixtures)
+            if g:
+                out["groups"] = g
+            else:
+                print("standings: nothing parsed (kept existing)", file=sys.stderr)
+        except Exception as e:
+            print(f"standings fetch failed: {e}", file=sys.stderr)
+
+    # optional manual/feed inputs
+    disc = load(DISCIPLINE, {})
+    fp = disc.get("fp", {})  # {teamCode: number} or {teamCode: {yellow:..,yellow_red:..,red:..,yellow_and_red:..}}
+    for grp in out.get("groups", {}).values():
+        for code, row in grp.get("rows", {}).items():
+            if code in fp:
+                v = fp[code]
+                row["fp"] = v if isinstance(v, (int, float)) else fair_play_points(v)
+    out.pop("thirdsOverride", None)
+    ov = disc.get("thirdsOverride")
+    if isinstance(ov, list) and len(ov) == 8:
+        out["thirdsOverride"] = ov
+
+    if not out.get("groups") and "thirdsOverride" not in out:
+        return  # nothing to write (no token, no manual data)
+    out["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with open(STANDINGS, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    done = sum(1 for g in out.get("groups", {}).values() if g.get("complete"))
+    extra = []
+    if any("fp" in r for g in out.get("groups", {}).values() for r in g.get("rows", {}).values()):
+        extra.append("fair-play")
+    if "thirdsOverride" in out:
+        extra.append("thirds-override")
+    print(f"standings.json: {len(out.get('groups', {}))} groups ({done} complete)"
+          + (f" + {', '.join(extra)}" if extra else ""))
+
+
+BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+
+
+def _age_hours(ts, now):
+    if not ts:
+        return 1e9
+    try:
+        t = datetime.strptime(ts[:19], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    except Exception:
+        return 1e9
+    return (now - t).total_seconds() / 3600.0
+
+
+def http_get_retry(url, tries=3, headers=None, timeout=30):
+    last = None
+    for i in range(tries):
+        try:
+            return http_get(url, headers=headers, timeout=timeout)
+        except Exception as e:
+            last = e
+            if i < tries - 1:
+                time.sleep(2 * (i + 1))
+    raise last
+
+
+def _closes_from_stooq(symbol):
+    csv = http_get_retry("https://stooq.com/q/d/l/?s=%s&i=d" % symbol, headers={"User-Agent": BROWSER_UA})
+    # stooq returns a short text page (e.g. "Exceeded the daily hits limit") instead of CSV when throttled
+    if len(csv) < 200 and "limit" in csv.lower():
+        raise RuntimeError("stooq throttled: " + csv.strip()[:80])
+    out = []
+    for r in csv.strip().splitlines():
+        if not r or not r[0].isdigit():
+            continue
+        p = r.split(",")
+        if len(p) < 5:
+            continue
+        date, close = p[0], p[4]
+        if close in ("", "N/D"):
             continue
         try:
-            c = float(close)
+            out.append((date, float(close)))
         except ValueError:
+            pass
+    return out
+
+
+def _closes_from_yahoo(symbol):
+    url = ("https://query1.finance.yahoo.com/v8/finance/chart/%s?range=3mo&interval=1d"
+           % urllib.parse.quote(symbol))
+    data = json.loads(http_get_retry(url, headers={"User-Agent": BROWSER_UA}))
+    res = (data.get("chart", {}).get("result") or [None])[0]
+    if not res:
+        return []
+    ts = res.get("timestamp") or []
+    closes = (((res.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
+    out = []
+    for t, c in zip(ts, closes):
+        if c is None:
+            continue
+        date = datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d")
+        out.append((date, float(c)))
+    return out
+
+
+def update_index(path, stooq_symbol, yahoo_symbol, default_symbol, force=False):
+    """Index closes change once per trading day, so this self-throttles to ~1 fetch/day
+    (independent of the 15-min results cron). Tries Stooq first, then Yahoo Finance, with retries.
+    On total failure it keeps the last good data. Forced (or first-ever) runs always fetch."""
+    idx = load(path, {"symbol": default_symbol, "history": []})
+    now = datetime.now(timezone.utc)
+    fname = os.path.basename(path)
+    if not force and idx.get("history"):
+        if _age_hours(idx.get("updated"), now) < 20:      # already have today's data
+            return
+        if _age_hours(idx.get("checked"), now) < 1.5:     # back off after a recent attempt
+            return
+    idx["checked"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    rows, src = [], None
+    for name, fn, sym in (("Stooq", _closes_from_stooq, stooq_symbol),
+                          ("Yahoo", _closes_from_yahoo, yahoo_symbol)):
+        try:
+            rows = fn(sym)
+            if rows:
+                src = name
+                break
+        except Exception as e:
+            print(f"{name} {default_symbol} failed: {e}", file=sys.stderr)
+
+    if not rows:  # both sources failed; persist the attempt time (back-off) and keep existing data
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(idx, f, ensure_ascii=False, indent=2)
+        print(f"{fname}: no data this run, kept {len(idx.get('history', []))} closes", file=sys.stderr)
+        return
+
+    hist = {x["date"]: x for x in idx.get("history", [])}
+    added = 0
+    for date, c in rows:
+        if date < START_DATE:
             continue
         if date not in hist:
             added += 1
         hist[date] = {"date": date, "close": c}
     idx["history"] = [hist[k] for k in sorted(hist)]
-    idx["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    idx["updated"] = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(idx, f, ensure_ascii=False, indent=2)
-    fname = os.path.basename(path)
-    print(f"{fname}: {len(idx['history'])} closes ({added} new)")
+    print(f"{fname}: {len(idx['history'])} closes ({added} new, via {src})")
 
 
 def main():
@@ -336,8 +510,11 @@ def main():
         print("fixtures.json missing", file=sys.stderr)
         sys.exit(1)
     update_results(fixtures)
-    update_index(OMX, "%5Eomx", "^OMX")
-    update_index(SP500, "%5Espx", "^SPX")
+    update_standings(fixtures)
+    force_index = os.environ.get("INDEX_FORCE", "").strip() == "1"
+    # OMXS30: Yahoo serves the historical time series under ^OMXS30 (legacy ^OMX has no chart data)
+    update_index(OMX, "%5Eomx", "^OMXS30", "^OMX", force=force_index)
+    update_index(SP500, "%5Espx", "^GSPC", "^SPX", force=force_index)
 
 
 if __name__ == "__main__":

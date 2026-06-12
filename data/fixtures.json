@@ -1399,8 +1399,8 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-04T17:00:00Z",
-      "homeRef": "W73",
-      "awayRef": "W74",
+      "homeRef": "W75",
+      "awayRef": "W78",
       "venue": "NRG Stadium",
       "city": "Houston"
     },
@@ -1412,7 +1412,7 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-04T21:00:00Z",
-      "homeRef": "W75",
+      "homeRef": "W73",
       "awayRef": "W76",
       "venue": "Lincoln Financial Field",
       "city": "Philadelphia"
@@ -1425,8 +1425,8 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-05T20:00:00Z",
-      "homeRef": "W77",
-      "awayRef": "W78",
+      "homeRef": "W74",
+      "awayRef": "W77",
       "venue": "MetLife Stadium",
       "city": "East Rutherford"
     },
@@ -1451,8 +1451,8 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-06T19:00:00Z",
-      "homeRef": "W81",
-      "awayRef": "W82",
+      "homeRef": "W84",
+      "awayRef": "W83",
       "venue": "AT&T Stadium",
       "city": "Dallas"
     },
@@ -1464,8 +1464,8 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-07T00:00:00Z",
-      "homeRef": "W83",
-      "awayRef": "W84",
+      "homeRef": "W82",
+      "awayRef": "W81",
       "venue": "Lumen Field",
       "city": "Seattle"
     },
@@ -1477,7 +1477,7 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-07T16:00:00Z",
-      "homeRef": "W85",
+      "homeRef": "W87",
       "awayRef": "W86",
       "venue": "Mercedes-Benz Stadium",
       "city": "Atlanta"
@@ -1490,7 +1490,7 @@
       "roundKey": "R16",
       "group": null,
       "kickoff": "2026-07-07T20:00:00Z",
-      "homeRef": "W87",
+      "homeRef": "W85",
       "awayRef": "W88",
       "venue": "BC Place",
       "city": "Vancouver"

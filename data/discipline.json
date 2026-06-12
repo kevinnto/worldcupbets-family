@@ -1,0 +1,5 @@
+{
+  "_readme": "Optional manual/feed input, folded into standings.json by the updater. Leave empty unless needed. 'fp' = FIFA team-conduct (fair-play) points per team code, either a final number (negative) or worst-per-player card counts {yellow,yellow_red,red,yellow_and_red}. 'thirdsOverride' = the exact 8 qualifying third-placed team codes from FIFA's official ranking, used verbatim. Card data is NOT on football-data.org's free tier, so use this only if a deep fair-play tie among third-placed teams ever needs resolving.",
+  "fp": {},
+  "thirdsOverride": []
+}

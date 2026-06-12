@@ -67,7 +67,16 @@ function computeGroup(letter) {
   const table = Object.values(row);
   table.forEach(t => t.gd = t.gf - t.ga);
   table.sort((x, y) => y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || team(x.c).sv.localeCompare(team(y.c).sv));
-  return { table, complete: played === total && total > 0, played, total };
+  // when the official standings have been fetched, trust their order (applies FIFA's full
+  // tiebreakers incl. head-to-head); our locally-computed stats match, only the order can differ
+  const off = DATA.standings && DATA.standings.groups && DATA.standings.groups[letter];
+  let official = false;
+  if (off && Array.isArray(off.order) && off.order.length === codes.length && off.order.every(c => row[c])) {
+    const rank = {}; off.order.forEach((c, i) => rank[c] = i);
+    table.sort((x, y) => rank[x.c] - rank[y.c]);
+    official = true;
+  }
+  return { table, complete: played === total && total > 0, played, total, official };
 }
 
 function allStandings() {
@@ -106,9 +115,36 @@ function resolveRef(ref, standings) {
   return null;
 }
 
+// the 8 groups whose third-placed team is among the best 8 (sorted), or null until the group stage ends
+function bestThirdGroups(standings) {
+  const best = bestThirds(standings);
+  if (!best) return null;
+  return Object.keys(DATA.fixtures.groups)
+    .filter(g => standings[g].table[2] && best.has(standings[g].table[2].c))
+    .sort();
+}
+// FIFA Annex C: map each third-facing group winner -> the actual third-placed team in its R32 slot
+function thirdSlotMap(standings) {
+  const groups = bestThirdGroups(standings);
+  if (!groups || !DATA.thirdAllocation) return null;
+  const assign = DATA.thirdAllocation.table[groups.join('')];
+  if (!assign) return null;
+  const slotOrder = DATA.thirdAllocation.slotOrder; // "ABDEGIKL"
+  const map = {};
+  for (let i = 0; i < slotOrder.length; i++) {
+    const t = standings[assign[i]];
+    map[slotOrder[i]] = (t && t.table[2]) ? t.table[2].c : null;
+  }
+  return map;
+}
 function koTeams(m, standings) {
   const r = DATA.results.matches[m.id];
   if (r && r.home && r.away) return { home: r.home, away: r.away };
+  // third-slot matches (homeRef "1X" vs awayRef "3:...") resolve via the FIFA allocation table
+  if (String(m.awayRef).startsWith('3:')) {
+    const map = thirdSlotMap(standings);
+    return { home: resolveRef(m.homeRef, standings), away: map ? (map[m.homeRef[1]] || null) : null };
+  }
   return { home: resolveRef(m.homeRef, standings), away: resolveRef(m.awayRef, standings) };
 }
 
@@ -196,14 +232,34 @@ function renderSchedule() {
    VIEW: GROUPS
    ============================================================ */
 function bestThirds(standings) {
-  const thirds = [];
+  // every group must be finished before thirds can be ranked
   for (const g of Object.keys(DATA.fixtures.groups)) {
     const st = standings[g];
-    if (!st || !st.complete) return null; // need every group finished to rank thirds
-    const t = st.table[2];
-    if (t) thirds.push({ g, c: t.c, pts: t.pts, gd: t.gd, gf: t.gf });
+    if (!st || !st.complete) return null;
   }
-  thirds.sort((x, y) => y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || x.g.localeCompare(y.g));
+  const groups = Object.keys(DATA.fixtures.groups);
+  const thirdCode = g => { const t = standings[g].table[2]; return t ? t.c : null; };
+  // official override: the exact 8 qualifying thirds entered in standings.json (used verbatim, FIFA-authoritative)
+  const ov = DATA.standings && DATA.standings.thirdsOverride;
+  if (Array.isArray(ov) && ov.length === 8) {
+    const valid = new Set(groups.map(thirdCode).filter(Boolean));
+    if (ov.every(c => valid.has(c))) return new Set(ov);
+  }
+  // fair-play (team-conduct) points per FIFA, if supplied per team in standings.json (negative; higher is better)
+  const fpOf = c => {
+    const gr = (DATA.standings && DATA.standings.groups) || {};
+    for (const g in gr) if (gr[g].rows && gr[g].rows[c] && typeof gr[g].rows[c].fp === 'number') return gr[g].rows[c].fp;
+    return null;
+  };
+  const thirds = groups.map(g => {
+    const t = standings[g].table[2];
+    return t ? { g, c: t.c, pts: t.pts, gd: t.gd, gf: t.gf, fp: fpOf(t.c) } : null;
+  }).filter(Boolean);
+  // FIFA criteria: points, goal difference, goals scored, then fair-play (when known), then group as last resort
+  thirds.sort((x, y) =>
+    y.pts - x.pts || y.gd - x.gd || y.gf - x.gf ||
+    ((x.fp != null && y.fp != null) ? (y.fp - x.fp) : 0) ||
+    x.g.localeCompare(y.g));
   return new Set(thirds.slice(0, 8).map(t => t.c));
 }
 
@@ -397,9 +453,15 @@ function indexSeries(history, days) {
   const map = {}; h.forEach(x => map[x.date] = Number(x.close));
   const start = DATA.betting.startAmount;
   const sorted = h.slice().sort((a, b) => a.date.localeCompare(b.date));
-  const anchor = sorted[0].close;
+  // anchor = June 10 close (the baseline day); if absent, fall back to first stored close
+  const anchorEntry = sorted.find(x => x.date === '2026-06-10') || sorted[0];
+  const anchor = anchorEntry.close;
+  const anchorDate = anchorEntry.date;
+  // plot the anchor day itself at 200 (so it lines up with the players' baseline),
+  // then each later day shows its close relative to the anchor; days before it have no line
   let lastClose = anchor;
   return days.map(d => {
+    if (d < anchorDate) return null;
     if (map[d] != null) lastClose = map[d];
     else {
       for (let i = sorted.length - 1; i >= 0; i--) { if (sorted[i].date <= d) { lastClose = sorted[i].close; break; } }
@@ -1100,14 +1162,26 @@ function renderCountdown() {
 /* ============================================================
    VIEW: TIPS  (pre-tournament prediction game)
    ============================================================ */
-const TIP_PTS = { exact: 5, diff: 3, outcome: 2, groupWinner: 3, finalist: 5, champion: 10 };
+const TIP_PTS = { exact: 5, diff: 3, outcome: 2, groupWinner: 3, finalist: 20, champion: 40 };
+// Phase 2 "Slutspelstippning": a real bracket. Points awarded per correctly predicted match winner, per round.
+const TIP_PTS_KO = { R32: 3, R16: 6, QF: 10, SF: 16, FINAL: 30 };
+const KO_ROUNDS = [
+  { rk: 'R32', label: 'Sextondelsfinaler', pts: TIP_PTS_KO.R32 },
+  { rk: 'R16', label: 'Åttondelsfinaler', pts: TIP_PTS_KO.R16 },
+  { rk: 'QF', label: 'Kvartsfinaler', pts: TIP_PTS_KO.QF },
+  { rk: 'SF', label: 'Semifinaler', pts: TIP_PTS_KO.SF },
+  { rk: 'FINAL', label: 'Final', pts: TIP_PTS_KO.FINAL },
+];
+let _koDraft = null; // in-memory bracket being edited { matchId: winnerCode }
+let _koDraftPlayer = null;
 let _tipPlayer = (() => { try { return localStorage.getItem('wc2026_tip_player'); } catch (e) { return null; } })();
 let _auditPlayer = null;
 
 function nowDate() { return new Date(); }
 function predictionDeadline() {
-  const ks = DATA.fixtures.matches.map(m => new Date(m.kickoff).getTime());
-  return new Date(Math.min(...ks));
+  // Extended: Phase 1 stays open through the end of 13 June (Europe/Stockholm),
+  // but individual matches lock as they kick off (see buildTipForm) so already-played games can't be backfilled.
+  return new Date('2026-06-13T23:59:59+02:00');
 }
 function predictionsLocked() { return nowDate().getTime() >= predictionDeadline().getTime(); }
 
@@ -1137,6 +1211,114 @@ function scoreOutcome(ph, pa, ah, aa) {
   if (po !== ao) return 0;
   if ((ph - pa) === (ah - aa)) return TIP_PTS.diff;
   return TIP_PTS.outcome;
+}
+
+// teams that reached a given knockout round, resolved from the bracket
+function teamsInRound(rk, standings) {
+  const s = new Set();
+  DATA.fixtures.matches.forEach(m => {
+    if (m.roundKey !== rk) return;
+    const t = koTeams(m, standings);
+    if (t.home) s.add(t.home);
+    if (t.away) s.add(t.away);
+  });
+  return s;
+}
+// one advancement-tier row (pure: caller sums pts)
+function advRow(label, picks, reachedSet, ready, ptsEach, count) {
+  const uniq = [...new Set((picks || []).filter(Boolean))];
+  const pickDisp = uniq.length ? uniq.map(c => team(c).flag).join(' ') : '—';
+  if (!ready) return { label, pickDisp, actualDisp: 'pågår', pts: null, max: ptsEach * count };
+  const hits = uniq.filter(c => reachedSet.has(c)).length;
+  return { label, pickDisp, actualDisp: `${hits}/${count} rätt`, pts: hits * ptsEach, max: ptsEach * count };
+}
+
+// the 32 teams that reached the round of 32 (top 2 per group + 8 best thirds); [] until the group stage ends
+function qualifiedTeams(standings) {
+  const set = new Set();
+  Object.keys(DATA.fixtures.groups).forEach(g => {
+    const st = standings[g];
+    if (st && st.table[0]) set.add(st.table[0].c);
+    if (st && st.table[1]) set.add(st.table[1].c);
+  });
+  const thirds = bestThirds(standings);
+  if (thirds) thirds.forEach(c => set.add(c));
+  return [...set];
+}
+function groupStageDone(standings) { return bestThirds(standings) !== null; }
+function koDeadline() {
+  const ks = DATA.fixtures.matches.filter(m => m.roundKey === 'R32').map(m => new Date(m.kickoff).getTime());
+  return new Date(Math.min(...ks));
+}
+function koLocked() { return nowDate().getTime() >= koDeadline().getTime(); }
+function koOpen(standings) { return groupStageDone(standings) && !koLocked(); }
+function koDeadlineText() {
+  const dl = koDeadline();
+  if (koLocked()) return '🔒 Stängd';
+  const ms = dl.getTime() - nowDate().getTime();
+  const d = Math.floor(ms / 864e5), h = Math.floor((ms % 864e5) / 36e5);
+  return `⏳ Stänger ${swDate.format(dl)} ${swTime.format(dl)} · om ${d}d ${h}h`;
+}
+
+// --- bracket helpers ---
+// KO matches of one round, in bracket order (excludes the 3rd-place playoff)
+function koMatches(rk) {
+  return DATA.fixtures.matches.filter(m => m.stage === 'KO' && m.roundKey === rk && m.roundKey !== '3RD').sort((a, b) => a.no - b.no);
+}
+// the two teams contesting a match inside ONE player's bracket:
+// R32 uses the real qualified teams; later rounds follow the player's own winners from the feeder matches
+function playerBracketTeams(m, picks, standings) {
+  if (m.roundKey === 'R32') return koTeams(m, standings);
+  return { home: picks['m' + String(m.homeRef).slice(1)] || null, away: picks['m' + String(m.awayRef).slice(1)] || null };
+}
+// drop any pick whose team is no longer one of the two teams in that slot (cascade after an upstream change)
+function cleanupBracket(picks, standings) {
+  for (const { rk } of KO_ROUNDS) {
+    koMatches(rk).forEach(m => {
+      const { home, away } = playerBracketTeams(m, picks, standings);
+      const w = picks[m.id];
+      if (w && w !== home && w !== away) delete picks[m.id];
+    });
+  }
+  return picks;
+}
+
+// Phase 2 scoring: one point bucket per round, comparing each slot's predicted winner to the actual winner
+function scoreKoPredictions(ko, standings) {
+  ko = ko || {};
+  const picks = ko.picks || {};
+  const reveal = koLocked(); // only expose what others picked once the phase-2 deadline has passed
+  const rows = []; let total = 0, pending = 0;
+  for (const { rk, label, pts } of KO_ROUNDS) {
+    const ms = koMatches(rk);
+    let hits = 0, decided = 0;
+    ms.forEach(m => {
+      const w = matchWinner(m, standings);
+      if (!w || !w.winner) return;
+      decided++;
+      if (picks[m.id] && picks[m.id] === w.winner) hits++;
+    });
+    const ready = decided === ms.length;
+    const lbl = rk === 'FINAL' ? 'Final · VM-vinnare' : label;
+    const picked = ms.map(m => picks[m.id]).filter(Boolean);
+    const pickDisp = (reveal && picked.length) ? `<span class="ta-flags">${picked.map(c => team(c).flag).join(' ')}</span>` : '';
+    if (ready) { total += hits * pts; rows.push({ label: lbl, pickDisp, actualDisp: `${hits}/${ms.length} rätt`, pts: hits * pts, max: pts * ms.length }); }
+    else { pending++; rows.push({ label: lbl, pickDisp, actualDisp: 'pågår', pts: null, max: pts * ms.length }); }
+  }
+  return { total, pending, rows, submitted: !!ko.submitted };
+}
+
+// combined Phase 1 + Phase 2 score for the league table
+function combinedScore(player, predAll, standings) {
+  const pred = predAll[player] || {};
+  const p1 = pred.submitted ? scorePlayerPredictions(player, predAll, standings) : null;
+  const p2 = (pred.ko && pred.ko.submitted) ? scoreKoPredictions(pred.ko, standings) : null;
+  return {
+    player,
+    total: (p1 ? p1.total : 0) + (p2 ? p2.total : 0),
+    pending: (p1 ? p1.pending : 0) + (p2 ? p2.pending : 0),
+    p1, p2, submittedAt: pred.submittedAt
+  };
 }
 
 function scorePlayerPredictions(player, predAll, standings) {
@@ -1196,7 +1378,9 @@ function tipDeadlineText() {
 
 function renderTipRules() {
   const el = document.getElementById('tip-rules-body'); if (!el) return;
-  el.innerHTML = `<ul class="tip-rule-list">
+  el.innerHTML = `
+  <h5 class="tip-rule-h">⚽ Gruppspelstippning (fas 1)</h5>
+  <ul class="tip-rule-list">
     <li><b>Exakt resultat</b> – ${TIP_PTS.exact} p (t.ex. du 2–1, facit 2–1)</li>
     <li><b>Rätt utgång + målskillnad</b> – ${TIP_PTS.diff} p (du 3–2, facit 2–1)</li>
     <li><b>Rätt utgång (1/X/2)</b> – ${TIP_PTS.outcome} p</li>
@@ -1204,7 +1388,17 @@ function renderTipRules() {
     <li><b>Rätt gruppvinnare</b> – ${TIP_PTS.groupWinner} p styck (×12)</li>
     <li><b>Rätt finalist</b> – ${TIP_PTS.finalist} p styck (×2)</li>
     <li><b>Rätt VM-vinnare</b> – ${TIP_PTS.champion} p</li>
-  </ul><p class="tip-rule-note">Endast gruppspelets matcher tippas på resultat (slutspelets lottning är inte känd före deadline). Slutspelet fångas via finalister och VM-vinnare.</p>`;
+  </ul>
+  <h5 class="tip-rule-h">🏆 Slutspelstippning (fas 2)</h5>
+  <p class="tip-rule-note">Öppnar när gruppspelet är klart och alla 32 lag är satta i slutspelsträdet. Du fyller i ett eget slutspelsträd: välj vinnare i varje match, vinnaren går vidare till nästa runda. Poängen läggs ovanpå fas 1.</p>
+  <ul class="tip-rule-list">
+    <li><b>Rätt vinnare i sextondelsfinal</b> – ${TIP_PTS_KO.R32} p styck (×16)</li>
+    <li><b>Rätt vinnare i åttondelsfinal</b> – ${TIP_PTS_KO.R16} p styck (×8)</li>
+    <li><b>Rätt vinnare i kvartsfinal</b> – ${TIP_PTS_KO.QF} p styck (×4)</li>
+    <li><b>Rätt vinnare i semifinal</b> – ${TIP_PTS_KO.SF} p styck (×2)</li>
+    <li><b>Rätt VM-vinnare (final)</b> – ${TIP_PTS_KO.FINAL} p</li>
+  </ul>
+  <p class="tip-rule-note">Varje match poängsätts mot facit för just den platsen i trädet. Lag du inte tagit vidare gråmarkeras automatiskt i nästa runda, och de två finalisterna kommer alltid från var sin halva av trädet.</p>`;
 }
 
 function renderTips() {
@@ -1216,15 +1410,31 @@ function renderTips() {
   const intro = document.getElementById('tip-intro');
   if (intro) intro.textContent = locked
     ? 'Tippningen är stängd. Poängen räknas löpande när matcherna spelas. Klicka på en spelare i ligan för att granska allas tips.'
-    : 'Tippa alla gruppspelsmatcher, gruppvinnare, finalister och VM-vinnare före första avsparken. Andras tips visas först när tippningen stänger.';
+    : 'Tippa alla gruppspelsmatcher, gruppvinnare, finalister och VM-vinnare före första avsparken. Slutspelslagen tippas i en andra omgång när gruppspelet är klart. Andras tips visas först när tippningen stänger.';
   renderTipRules();
   const entry = document.getElementById('tip-entry');
   if (entry) {
     if (!locked) { entry.style.display = ''; buildTipForm(); }
     else { entry.style.display = 'none'; entry.innerHTML = ''; }
   }
+  renderKoSection(standings);
   renderTipBoard(standings, locked);
   if (locked) renderTipAudit(standings); else { const a = document.getElementById('tip-audit'); if (a) a.innerHTML = ''; }
+}
+
+function renderKoSection(standings) {
+  const el = document.getElementById('tipko-section'); if (!el) return;
+  if (!groupStageDone(standings)) {
+    el.innerHTML = `<div class="tipko-head"><h3>🏆 Slutspelstippning</h3><span class="tipko-status soon">Snart</span></div>
+      <p class="tipko-note">Öppnar när gruppspelet är färdigspelat. Då är alla 32 slutspelslag klara och du tippar vilka som tar sig vidare runda för runda. Poängen läggs ovanpå din gruppspelspoäng.</p>`;
+    return;
+  }
+  if (koLocked()) {
+    el.innerHTML = `<div class="tipko-head"><h3>🏆 Slutspelstippning</h3><span class="tipko-status closed">🔒 Stängd</span></div>
+      <p class="tipko-note">Slutspelstipsen är låsta och räknas löpande in i totalpoängen nedan.</p>`;
+    return;
+  }
+  buildKoForm(standings);
 }
 
 function buildTipForm() {
@@ -1240,9 +1450,11 @@ function buildTipForm() {
   const groups = Object.keys(DATA.fixtures.groups).map(g => {
     const rows = groupMatches(g).map(m => {
       const h = team(m.home), a = team(m.away), pm = M[m.id] || {};
-      return `<div class="tip-match">
+      const started = new Date(m.kickoff).getTime() <= nowDate().getTime();
+      const dis = started ? ' disabled' : '';
+      return `<div class="tip-match${started ? ' locked' : ''}"${started ? ' title="Matchen har startat – låst"' : ''}>
         <span class="tm-team home"><span class="tname">${h.sv}</span><span class="flag">${h.flag}</span></span>
-        <span class="tm-score"><input class="ti-score" type="number" min="0" max="30" inputmode="numeric" data-mid="${m.id}" data-side="h" value="${pm.h ?? ''}"><span class="tm-dash">–</span><input class="ti-score" type="number" min="0" max="30" inputmode="numeric" data-mid="${m.id}" data-side="a" value="${pm.a ?? ''}"></span>
+        <span class="tm-score"><input class="ti-score" type="number" min="0" max="30" inputmode="numeric" data-mid="${m.id}" data-side="h" value="${pm.h ?? ''}"${dis}><span class="tm-dash">${started ? '🔒' : '–'}</span><input class="ti-score" type="number" min="0" max="30" inputmode="numeric" data-mid="${m.id}" data-side="a" value="${pm.a ?? ''}"${dis}></span>
         <span class="tm-team away"><span class="flag">${a.flag}</span><span class="tname">${a.sv}</span></span>
       </div>`;
     }).join('');
@@ -1280,6 +1492,7 @@ function buildTipForm() {
 }
 
 function handleTipSave() {
+  if (predictionsLocked()) { renderTips(); return; } // window closed while the page sat open
   const player = document.getElementById('tip-player').value;
   const matches = {};
   $$('#tip-entry .ti-score').forEach(inp => {
@@ -1292,7 +1505,10 @@ function handleTipSave() {
   $$('#tip-entry .ti-gw').forEach(sel => { if (sel.value) groupWinners[sel.dataset.g] = sel.value; });
   const finalists = [document.getElementById('tip-fin0').value, document.getElementById('tip-fin1').value].filter(Boolean);
   const champion = document.getElementById('tip-champ').value || null;
-  const pred = { submitted: true, submittedAt: nowDate().toISOString(), matches, groupWinners, finalists, champion };
+  // merge onto the existing prediction so a Phase 2 bracket (pred.ko) is never overwritten
+  const pred = JSON.parse(JSON.stringify(effectivePredictions()[player] || {}));
+  pred.submitted = true; pred.submittedAt = nowDate().toISOString();
+  pred.matches = matches; pred.groupWinners = groupWinners; pred.finalists = finalists; pred.champion = champion;
   const msg = document.getElementById('tip-msg');
   savePredictions(player, pred).then(() => {
     msg.className = 'submit-msg ok';
@@ -1301,26 +1517,97 @@ function handleTipSave() {
   }).catch(e => { msg.className = 'submit-msg err'; msg.textContent = 'Kunde inte spara: ' + e.message; });
 }
 
+function buildKoForm(standings) {
+  const el = document.getElementById('tipko-section'); if (!el) return;
+  const players = DATA.betting.players;
+  if (!_tipPlayer || !players.includes(_tipPlayer)) _tipPlayer = players[0];
+  const saved = ((effectivePredictions()[_tipPlayer] || {}).ko) || {};
+  if (_koDraft === null || _koDraftPlayer !== _tipPlayer) {
+    _koDraft = JSON.parse(JSON.stringify(saved.picks || {}));
+    _koDraftPlayer = _tipPlayer;
+  }
+  cleanupBracket(_koDraft, standings);
+  const picks = _koDraft, teams = DATA.fixtures.teams;
+  const chip = (mid, code) => {
+    if (!code) return `<span class="bm-team tbd">– väntar –</span>`;
+    const t = teams[code];
+    return `<button type="button" class="bm-team${picks[mid] === code ? ' win' : ''}" data-mid="${mid}" data-code="${code}">${t.flag} ${t.sv}</button>`;
+  };
+  const roundHtml = ({ rk, label, pts }) => {
+    const ms = koMatches(rk); let done = 0;
+    const cards = ms.map(m => {
+      const { home, away } = playerBracketTeams(m, picks, standings);
+      if (picks[m.id]) done++;
+      return `<div class="bm">${chip(m.id, home)}<span class="bm-v">mot</span>${chip(m.id, away)}</div>`;
+    }).join('');
+    return `<div class="ko-round"><div class="kr-head"><span>${label}</span><span class="kr-meta">${done}/${ms.length} · ${pts}p/rätt</span></div><div class="kr-matches">${cards}</div></div>`;
+  };
+  const finalId = (koMatches('FINAL')[0] || {}).id;
+  const champ = finalId ? picks[finalId] : null;
+  const champBanner = champ
+    ? `<div class="ko-champ">🏆 Din VM-vinnare: <b>${teams[champ].flag} ${teams[champ].sv}</b></div>`
+    : `<div class="ko-champ empty">🏆 Fyll i trädet hela vägen till en VM-vinnare</div>`;
+  el.innerHTML = `
+    <div class="tipko-head"><h3>🏆 Slutspelstippning</h3><span class="tipko-status open">${koDeadlineText()}</span></div>
+    <p class="tipko-note">Gruppspelet är klart – alla 32 lag är satta i trädet. Välj vinnare i varje match, vinnaren går vidare. Lag du väljer bort gråmarkeras i nästa runda. ${saved.submitted ? '<b>✓ Inlämnat</b> · går att ändra till första slutspelsmatchen' : ''}</p>
+    <div class="tip-entry-head"><label class="tip-who">Vems träd<select id="tipko-player">${players.map(p => `<option value="${p}"${p === _tipPlayer ? ' selected' : ''}>${p}</option>`).join('')}</select></label><span class="ko-progress">${Object.keys(picks).length}/31 val</span></div>
+    ${champBanner}
+    <div class="ko-bracket">${KO_ROUNDS.map(roundHtml).join('')}</div>
+    <div class="tip-actions"><button id="tipko-save" class="btn btn-primary tip-save-btn">💾 Spara slutspelsträd</button><span id="tipko-msg" class="submit-msg"></span></div>`;
+  document.getElementById('tipko-player').addEventListener('change', e => {
+    _tipPlayer = e.target.value;
+    try { localStorage.setItem('wc2026_tip_player', _tipPlayer); } catch (err) { /* ignore */ }
+    _koDraft = null;
+    buildKoForm(standings);
+  });
+  el.querySelectorAll('.bm-team[data-code]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mid = btn.dataset.mid, code = btn.dataset.code;
+      if (picks[mid] === code) delete picks[mid]; else picks[mid] = code;
+      cleanupBracket(picks, standings);
+      buildKoForm(standings);
+    });
+  });
+  document.getElementById('tipko-save').addEventListener('click', () => handleKoSave(standings));
+}
+
+function handleKoSave(standings) {
+  if (koLocked()) { renderTips(); return; } // slutspel window closed while the page sat open
+  const player = document.getElementById('tipko-player').value;
+  const picks = cleanupBracket(JSON.parse(JSON.stringify(_koDraft || {})), standings);
+  const finalId = (koMatches('FINAL')[0] || {}).id;
+  const ko = { submitted: true, submittedAt: nowDate().toISOString(), picks, champion: finalId ? (picks[finalId] || null) : null };
+  const base = JSON.parse(JSON.stringify(effectivePredictions()[player] || {}));
+  base.ko = ko;
+  const msg = document.getElementById('tipko-msg');
+  savePredictions(player, base).then(() => {
+    msg.className = 'submit-msg ok';
+    msg.textContent = `✓ Slutspelsträd sparat för ${player} (${Object.keys(picks).length}/31 val)`;
+    fireConfetti();
+  }).catch(e => { msg.className = 'submit-msg err'; msg.textContent = 'Kunde inte spara: ' + e.message; });
+}
+
 function renderTipBoard(standings, locked) {
   const board = document.getElementById('tip-board'); if (!board) return;
   const predAll = effectivePredictions();
-  const submitted = DATA.betting.players.filter(p => predAll[p] && predAll[p].submitted);
+  const submitted = DATA.betting.players.filter(p => predAll[p] && (predAll[p].submitted || (predAll[p].ko && predAll[p].ko.submitted)));
   const hint = document.getElementById('tip-board-hint');
   if (!submitted.length) {
     if (hint) hint.textContent = locked ? 'Ingen lämnade in tips i tid.' : 'Ingen har lämnat in ännu.';
     board.innerHTML = ''; return;
   }
-  const rows = submitted.map(p => scorePlayerPredictions(p, predAll, standings)).sort((a, b) => b.total - a.total);
+  const rows = submitted.map(p => combinedScore(p, predAll, standings)).sort((a, b) => b.total - a.total);
   if (hint) hint.textContent = locked ? '👆 Klicka på en spelare för att granska tipsen' : `${submitted.length} har lämnat in · poäng räknas när matcherna spelas`;
   if (locked && (!_auditPlayer || !submitted.includes(_auditPlayer))) _auditPlayer = rows[0].player;
   let rank = 0, prev = null;
   board.innerHTML = rows.map((r, i) => {
     if (prev === null || r.total !== prev) { rank = i + 1; prev = r.total; }
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const breakdown = r.p2 ? `<span class="tr-split">${r.p1 ? r.p1.total : 0}+${r.p2.total}</span>` : '';
     return `<div class="tip-row${locked ? ' clickable' : ''}${_auditPlayer === r.player ? ' sel' : ''}" data-player="${r.player}">
       <span class="tr-rank">${medal}</span>
       <span class="tr-name">${r.player}</span>
-      <span class="tr-pts">${r.total} p</span>
+      <span class="tr-pts">${r.total} p${breakdown}</span>
     </div>`;
   }).join('');
 }
@@ -1333,13 +1620,15 @@ function ptBadge(pts, max) {
 function renderTipAudit(standings) {
   const el = document.getElementById('tip-audit'); if (!el) return;
   const predAll = effectivePredictions();
-  if (!_auditPlayer || !(predAll[_auditPlayer] && predAll[_auditPlayer].submitted)) { el.innerHTML = ''; return; }
-  const sc = scorePlayerPredictions(_auditPlayer, predAll, standings);
+  const pred = predAll[_auditPlayer];
+  if (!_auditPlayer || !(pred && (pred.submitted || (pred.ko && pred.ko.submitted)))) { el.innerHTML = ''; return; }
+  const cs = combinedScore(_auditPlayer, predAll, standings);
+  const sc = cs.p1;
 
-  const bonusRows = sc.detail.bonus.map(b =>
-    `<tr><td>${b.label}</td><td>${b.pickDisp}</td><td class="ta-act">${b.actualDisp}</td><td class="ta-pts">${ptBadge(b.pts, b.max)}</td></tr>`).join('');
+  const p1bonus = sc ? sc.detail.bonus.map(b =>
+    `<tr><td>${b.label}</td><td>${b.pickDisp}</td><td class="ta-act">${b.actualDisp}</td><td class="ta-pts">${ptBadge(b.pts, b.max)}</td></tr>`).join('') : '';
 
-  const byGroup = Object.keys(DATA.fixtures.groups).map(g => {
+  const byGroup = sc ? Object.keys(DATA.fixtures.groups).map(g => {
     const rows = sc.detail.matches.filter(x => x.m.group === g);
     const sub = rows.reduce((s, x) => s + (x.pts || 0), 0);
     const body = rows.map(x => {
@@ -1350,17 +1639,30 @@ function renderTipAudit(standings) {
     }).join('');
     return `<details class="ta-group"><summary>Grupp ${g} <span class="ta-sub">${sub} p</span></summary>
       <table class="ta-mtable"><tbody>${body}</tbody></table></details>`;
-  }).join('');
+  }).join('') : '';
+
+  const p1total = sc ? sc.total : 0;
+  const p1block = sc ? `
+    <h4 class="ta-sec">🎯 Gruppspelstips <span class="ta-phase">${p1total} p</span></h4>
+    <table class="ta-btable"><thead><tr><th>Bonustips</th><th>Gissning</th><th>Facit</th><th></th></tr></thead><tbody>${p1bonus}</tbody></table>
+    <div class="ta-groups">${byGroup}</div>` : '<p class="tipko-note">Lämnade inte in gruppspelstips.</p>';
+
+  let p2block = '';
+  if (cs.p2) {
+    const p2rows = cs.p2.rows.map(b =>
+      `<tr><td>${b.label}</td><td>${b.pickDisp}</td><td class="ta-act">${b.actualDisp}</td><td class="ta-pts">${ptBadge(b.pts, b.max)}</td></tr>`).join('');
+    p2block = `
+      <h4 class="ta-sec">🏆 Slutspelstippning <span class="ta-phase">${cs.p2.total} p</span></h4>
+      <table class="ta-btable"><thead><tr><th>Tips</th><th>Gissning</th><th>Facit</th><th></th></tr></thead><tbody>${p2rows}</tbody></table>`;
+  }
 
   el.innerHTML = `
     <div class="ta-head">
-      <h3>${_auditPlayer} · ${sc.total} p</h3>
-      ${sc.pending ? `<span class="ta-pending">${sc.pending} tips väntar på resultat</span>` : ''}
+      <h3>${_auditPlayer} · ${cs.total} p</h3>
+      ${cs.pending ? `<span class="ta-pending">${cs.pending} tips väntar på resultat</span>` : ''}
     </div>
-    <h4 class="ta-sec">🎯 Bonustips</h4>
-    <table class="ta-btable"><thead><tr><th>Tips</th><th>Gissning</th><th>Facit</th><th></th></tr></thead><tbody>${bonusRows}</tbody></table>
-    <h4 class="ta-sec">⚽ Matchtips</h4>
-    <div class="ta-groups">${byGroup}</div>`;
+    ${p1block}
+    ${p2block}`;
 }
 
 function setView(v) {
@@ -1468,29 +1770,35 @@ function rerenderActive() {
 async function refreshData() {
   try {
     const bust = '?t=' + Date.now();
-    const [results, omx, sp500] = await Promise.all([
+    const [results, omx, sp500, official] = await Promise.all([
       getJSON('./data/results.json' + bust),
       getJSON('./data/omx.json' + bust).catch(() => null),
       getJSON('./data/sp500.json' + bust).catch(() => null),
+      getJSON('./data/standings.json' + bust).catch(() => null),
     ]);
     let changed = false;
     if (results && results.updated !== (DATA.results && DATA.results.updated)) { DATA.results = results; changed = true; }
     if (omx && omx.updated !== (DATA.omx && DATA.omx.updated)) { DATA.omx = omx; changed = true; }
     if (sp500 && sp500.updated !== (DATA.sp500 && DATA.sp500.updated)) { DATA.sp500 = sp500; changed = true; }
+    if (official && official.updated !== (DATA.standings && DATA.standings.updated)) { DATA.standings = official; changed = true; }
     if (changed) rerenderActive();
   } catch (e) { /* offline or transient: keep current data */ }
 }
 
 async function init() {
   try {
-    const [fixtures, results, omx, sp500, betting] = await Promise.all([
+    const [fixtures, results, omx, sp500, betting, thirdAlloc, officialStandings] = await Promise.all([
       getJSON('./data/fixtures.json'),
       getJSON('./data/results.json'),
       getJSON('./data/omx.json'),
       getJSON('./data/sp500.json').catch(() => ({ history: [] })),
       getJSON('./data/betting.json'),
+      getJSON('./data/third_allocation.json').catch(() => null),
+      getJSON('./data/standings.json').catch(() => null),
     ]);
     DATA.fixtures = fixtures; DATA.results = results; DATA.omx = omx; DATA.sp500 = sp500; DATA.betting = betting;
+    DATA.thirdAllocation = thirdAlloc;
+    DATA.standings = officialStandings;
     DATA.predictions = {};
   } catch (e) {
     document.getElementById('app').innerHTML =
