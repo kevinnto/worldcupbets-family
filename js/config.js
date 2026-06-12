@@ -17,9 +17,12 @@
    downloading + committing data/betting.json.
    ============================================================ */
 window.FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBKwzKHxOGJqoliA92oPmHwNigCAZ4beGk",
+  authDomain: "worldcupbets-family.firebaseapp.com",
+  databaseURL:
+    "https://worldcupbets-family-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "worldcupbets-family",
+  storageBucket: "worldcupbets-family.firebasestorage.app",
+  messagingSenderId: "199758537486",
+  appId: "1:199758537486:web:08382a735fbbf47246ed5f",
 };
