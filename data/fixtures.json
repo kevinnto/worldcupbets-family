@@ -245,78 +245,18 @@
     }
   },
   "groups": {
-    "A": [
-      "MEX",
-      "RSA",
-      "KOR",
-      "CZE"
-    ],
-    "B": [
-      "CAN",
-      "BIH",
-      "QAT",
-      "SUI"
-    ],
-    "C": [
-      "BRA",
-      "MAR",
-      "HAI",
-      "SCO"
-    ],
-    "D": [
-      "USA",
-      "PAR",
-      "AUS",
-      "TUR"
-    ],
-    "E": [
-      "GER",
-      "CUW",
-      "CIV",
-      "ECU"
-    ],
-    "F": [
-      "NED",
-      "JPN",
-      "SWE",
-      "TUN"
-    ],
-    "G": [
-      "BEL",
-      "EGY",
-      "IRN",
-      "NZL"
-    ],
-    "H": [
-      "ESP",
-      "CPV",
-      "KSA",
-      "URU"
-    ],
-    "I": [
-      "FRA",
-      "SEN",
-      "IRQ",
-      "NOR"
-    ],
-    "J": [
-      "ARG",
-      "ALG",
-      "AUT",
-      "JOR"
-    ],
-    "K": [
-      "POR",
-      "COD",
-      "UZB",
-      "COL"
-    ],
-    "L": [
-      "ENG",
-      "CRO",
-      "GHA",
-      "PAN"
-    ]
+    "A": ["MEX", "RSA", "KOR", "CZE"],
+    "B": ["CAN", "BIH", "QAT", "SUI"],
+    "C": ["BRA", "MAR", "HAI", "SCO"],
+    "D": ["USA", "PAR", "AUS", "TUR"],
+    "E": ["GER", "CUW", "CIV", "ECU"],
+    "F": ["NED", "JPN", "SWE", "TUN"],
+    "G": ["BEL", "EGY", "IRN", "NZL"],
+    "H": ["ESP", "CPV", "KSA", "URU"],
+    "I": ["FRA", "SEN", "IRQ", "NOR"],
+    "J": ["ARG", "ALG", "AUT", "JOR"],
+    "K": ["POR", "COD", "UZB", "COL"],
+    "L": ["ENG", "CRO", "GHA", "PAN"]
   },
   "matches": [
     {
@@ -553,7 +493,7 @@
       "stage": "GROUP",
       "round": "Grupp D",
       "group": "D",
-      "kickoff": "2026-06-13T04:00:00Z",
+      "kickoff": "2026-06-14T04:00:00Z",
       "home": "AUS",
       "away": "TUR",
       "venue": "BC Place",
@@ -649,7 +589,7 @@
       "stage": "GROUP",
       "round": "Grupp E",
       "group": "E",
-      "kickoff": "2026-06-21T00:00:00Z",
+      "kickoff": "2026-06-21T03:00:00Z",
       "home": "ECU",
       "away": "CUW",
       "venue": "Arrowhead Stadium",
@@ -721,7 +661,7 @@
       "stage": "GROUP",
       "round": "Grupp F",
       "group": "F",
-      "kickoff": "2026-06-20T04:00:00Z",
+      "kickoff": "2026-06-21T04:00:00Z",
       "home": "TUN",
       "away": "JPN",
       "venue": "Estadio BBVA",
@@ -761,7 +701,7 @@
       "home": "BEL",
       "away": "EGY",
       "venue": "Lumen Field",
-      "city": "Seattle"
+      "city": "Vancouver"
     },
     {
       "id": "m38",
@@ -985,7 +925,7 @@
       "stage": "GROUP",
       "round": "Grupp J",
       "group": "J",
-      "kickoff": "2026-06-16T04:00:00Z",
+      "kickoff": "2026-06-17T04:00:00Z",
       "home": "AUT",
       "away": "JOR",
       "venue": "Levi's Stadium",
@@ -1220,7 +1160,7 @@
       "homeRef": "1E",
       "awayRef": "3:ABCDF",
       "venue": "Gillette Stadium",
-      "city": "Boston"
+      "city": "Foxborough"
     },
     {
       "id": "m76",
@@ -1246,7 +1186,7 @@
       "homeRef": "2E",
       "awayRef": "2I",
       "venue": "AT&T Stadium",
-      "city": "Dallas"
+      "city": "Arlington"
     },
     {
       "id": "m78",
@@ -1363,7 +1303,7 @@
       "homeRef": "2D",
       "awayRef": "2G",
       "venue": "AT&T Stadium",
-      "city": "Dallas"
+      "city": "Arlington"
     },
     {
       "id": "m87",
@@ -1454,7 +1394,7 @@
       "homeRef": "W84",
       "awayRef": "W83",
       "venue": "AT&T Stadium",
-      "city": "Dallas"
+      "city": "Arlington"
     },
     {
       "id": "m94",
@@ -1506,7 +1446,7 @@
       "homeRef": "W89",
       "awayRef": "W90",
       "venue": "Gillette Stadium",
-      "city": "Boston"
+      "city": "Foxborough"
     },
     {
       "id": "m98",
@@ -1558,7 +1498,7 @@
       "homeRef": "W97",
       "awayRef": "W98",
       "venue": "AT&T Stadium",
-      "city": "Dallas"
+      "city": "Arlington"
     },
     {
       "id": "m102",
