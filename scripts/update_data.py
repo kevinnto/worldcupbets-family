@@ -36,7 +36,7 @@ ALIASES = {
     "unitedstates": "usa", "unitedstatesofamerica": "usa",
     "ivorycoast": "cotedivoire",
     "drcongo": "congodr", "democraticrepublicofthecongo": "congodr", "dccongo": "congodr",
-    "capeverde": "caboverde", "caboverde": "caboverde",
+    "capeverde": "caboverde", "caboverde": "caboverde", "capeverdeislands": "caboverde",
     "bosniaandherzegovina": "bosnia", "bosniaherzegovina": "bosnia", "bosniahercegovina": "bosnia",
     "czechrepublic": "czechia",
 }
