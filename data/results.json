@@ -1,5 +1,5 @@
 {
-  "updated": "2026-06-27T22:39:31Z",
+  "updated": "2026-06-27T22:52:35Z",
   "note": "Auto-populated daily by GitHub Actions. You can also edit scores here by hand: \"m1\": {\"homeScore\": 2, \"awayScore\": 1, \"status\": \"FINISHED\"}. roundKey winners also resolve knockout slots.",
   "matches": {
     "m1": {
@@ -252,13 +252,6 @@
       "awayScore": 1,
       "status": "FINISHED"
     },
-    "m85": {
-      "homeScore": 1,
-      "awayScore": 1,
-      "status": "FINISHED",
-      "home": "SUI",
-      "away": "QAT"
-    },
     "m18": {
       "homeScore": 4,
       "awayScore": 2,
@@ -268,13 +261,6 @@
       "homeScore": 0,
       "awayScore": 3,
       "status": "FINISHED"
-    },
-    "m74": {
-      "homeScore": 1,
-      "awayScore": 1,
-      "status": "FINISHED",
-      "home": "BRA",
-      "away": "MAR"
     },
     "m5": {
       "homeScore": 0,
@@ -286,13 +272,6 @@
       "awayScore": 0,
       "status": "FINISHED"
     },
-    "m79": {
-      "homeScore": 2,
-      "awayScore": 0,
-      "status": "FINISHED",
-      "home": "MEX",
-      "away": "RSA"
-    },
     "m30": {
       "homeScore": 2,
       "awayScore": 1,
@@ -302,20 +281,6 @@
       "homeScore": 0,
       "awayScore": 2,
       "status": "FINISHED"
-    },
-    "m75": {
-      "homeScore": 7,
-      "awayScore": 1,
-      "status": "FINISHED",
-      "home": "GER",
-      "away": "CUW"
-    },
-    "m77": {
-      "homeScore": 1,
-      "awayScore": 0,
-      "status": "FINISHED",
-      "home": "CIV",
-      "away": "ECU"
     },
     "m36": {
       "homeScore": 1,
@@ -337,20 +302,6 @@
       "awayScore": 0,
       "status": "FINISHED"
     },
-    "m82": {
-      "homeScore": 4,
-      "awayScore": 1,
-      "status": "FINISHED",
-      "home": "USA",
-      "away": "PAR"
-    },
-    "m86": {
-      "homeScore": 2,
-      "awayScore": 0,
-      "status": "FINISHED",
-      "home": "AUS",
-      "away": "TUR"
-    },
     "m53": {
       "homeScore": 1,
       "awayScore": 4,
@@ -360,13 +311,6 @@
       "homeScore": 5,
       "awayScore": 0,
       "status": "FINISHED"
-    },
-    "m78": {
-      "homeScore": 3,
-      "awayScore": 1,
-      "status": "FINISHED",
-      "home": "FRA",
-      "away": "SEN"
     },
     "m48": {
       "homeScore": 0,
@@ -378,13 +322,6 @@
       "awayScore": 0,
       "status": "FINISHED"
     },
-    "m83": {
-      "homeScore": 0,
-      "awayScore": 0,
-      "status": "FINISHED",
-      "home": "ESP",
-      "away": "CPV"
-    },
     "m42": {
       "homeScore": 1,
       "awayScore": 5,
@@ -395,29 +332,15 @@
       "awayScore": 1,
       "status": "FINISHED"
     },
-    "m81": {
-      "homeScore": 1,
-      "awayScore": 1,
-      "status": "FINISHED",
-      "home": "BEL",
-      "away": "EGY"
-    },
     "m71": {
       "homeScore": 0,
       "awayScore": 2,
       "status": "IN_PLAY"
     },
     "m72": {
-      "homeScore": 1,
+      "homeScore": 2,
       "awayScore": 1,
       "status": "IN_PLAY"
-    },
-    "m80": {
-      "homeScore": 4,
-      "awayScore": 2,
-      "status": "FINISHED",
-      "home": "ENG",
-      "away": "CRO"
     }
   }
 }
