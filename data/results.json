@@ -1,5 +1,423 @@
 {
-  "updated": null,
+  "updated": "2026-06-27T22:39:31Z",
   "note": "Auto-populated daily by GitHub Actions. You can also edit scores here by hand: \"m1\": {\"homeScore\": 2, \"awayScore\": 1, \"status\": \"FINISHED\"}. roundKey winners also resolve knockout slots.",
-  "matches": {}
+  "matches": {
+    "m1": {
+      "homeScore": 2,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m2": {
+      "homeScore": 2,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m7": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m19": {
+      "homeScore": 4,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m8": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m13": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m14": {
+      "homeScore": 0,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m20": {
+      "homeScore": 2,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m25": {
+      "homeScore": 7,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m31": {
+      "homeScore": 2,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m26": {
+      "homeScore": 1,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m32": {
+      "homeScore": 5,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m37": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m44": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m38": {
+      "homeScore": 2,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m49": {
+      "homeScore": 3,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m50": {
+      "homeScore": 1,
+      "awayScore": 4,
+      "status": "FINISHED"
+    },
+    "m55": {
+      "homeScore": 3,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m56": {
+      "homeScore": 3,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m61": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m67": {
+      "homeScore": 4,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m68": {
+      "homeScore": 1,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m62": {
+      "homeScore": 1,
+      "awayScore": 3,
+      "status": "FINISHED"
+    },
+    "m3": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m9": {
+      "homeScore": 4,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m10": {
+      "homeScore": 6,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m4": {
+      "homeScore": 1,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m21": {
+      "homeScore": 2,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m15": {
+      "homeScore": 0,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m16": {
+      "homeScore": 3,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m22": {
+      "homeScore": 0,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m33": {
+      "homeScore": 5,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m43": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m27": {
+      "homeScore": 2,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m28": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m34": {
+      "homeScore": 0,
+      "awayScore": 4,
+      "status": "FINISHED"
+    },
+    "m45": {
+      "homeScore": 4,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m39": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m46": {
+      "homeScore": 2,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m40": {
+      "homeScore": 1,
+      "awayScore": 3,
+      "status": "FINISHED"
+    },
+    "m57": {
+      "homeScore": 2,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m51": {
+      "homeScore": 3,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m52": {
+      "homeScore": 3,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m58": {
+      "homeScore": 1,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m63": {
+      "homeScore": 5,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m69": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m70": {
+      "homeScore": 0,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m64": {
+      "homeScore": 1,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m11": {
+      "homeScore": 2,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m12": {
+      "homeScore": 3,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m85": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED",
+      "home": "SUI",
+      "away": "QAT"
+    },
+    "m18": {
+      "homeScore": 4,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m17": {
+      "homeScore": 0,
+      "awayScore": 3,
+      "status": "FINISHED"
+    },
+    "m74": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED",
+      "home": "BRA",
+      "away": "MAR"
+    },
+    "m5": {
+      "homeScore": 0,
+      "awayScore": 3,
+      "status": "FINISHED"
+    },
+    "m6": {
+      "homeScore": 1,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m79": {
+      "homeScore": 2,
+      "awayScore": 0,
+      "status": "FINISHED",
+      "home": "MEX",
+      "away": "RSA"
+    },
+    "m30": {
+      "homeScore": 2,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m29": {
+      "homeScore": 0,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m75": {
+      "homeScore": 7,
+      "awayScore": 1,
+      "status": "FINISHED",
+      "home": "GER",
+      "away": "CUW"
+    },
+    "m77": {
+      "homeScore": 1,
+      "awayScore": 0,
+      "status": "FINISHED",
+      "home": "CIV",
+      "away": "ECU"
+    },
+    "m36": {
+      "homeScore": 1,
+      "awayScore": 3,
+      "status": "FINISHED"
+    },
+    "m35": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m23": {
+      "homeScore": 3,
+      "awayScore": 2,
+      "status": "FINISHED"
+    },
+    "m24": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m82": {
+      "homeScore": 4,
+      "awayScore": 1,
+      "status": "FINISHED",
+      "home": "USA",
+      "away": "PAR"
+    },
+    "m86": {
+      "homeScore": 2,
+      "awayScore": 0,
+      "status": "FINISHED",
+      "home": "AUS",
+      "away": "TUR"
+    },
+    "m53": {
+      "homeScore": 1,
+      "awayScore": 4,
+      "status": "FINISHED"
+    },
+    "m54": {
+      "homeScore": 5,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m78": {
+      "homeScore": 3,
+      "awayScore": 1,
+      "status": "FINISHED",
+      "home": "FRA",
+      "away": "SEN"
+    },
+    "m48": {
+      "homeScore": 0,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m47": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED"
+    },
+    "m83": {
+      "homeScore": 0,
+      "awayScore": 0,
+      "status": "FINISHED",
+      "home": "ESP",
+      "away": "CPV"
+    },
+    "m42": {
+      "homeScore": 1,
+      "awayScore": 5,
+      "status": "FINISHED"
+    },
+    "m41": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED"
+    },
+    "m81": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "FINISHED",
+      "home": "BEL",
+      "away": "EGY"
+    },
+    "m71": {
+      "homeScore": 0,
+      "awayScore": 2,
+      "status": "IN_PLAY"
+    },
+    "m72": {
+      "homeScore": 1,
+      "awayScore": 1,
+      "status": "IN_PLAY"
+    },
+    "m80": {
+      "homeScore": 4,
+      "awayScore": 2,
+      "status": "FINISHED",
+      "home": "ENG",
+      "away": "CRO"
+    }
+  }
 }
