@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VM 2026 · Familjen </title>
+  <title>VM 2026 · Gänget & Stålarna</title>
   <script>
     (function () {
       try {
@@ -34,7 +34,7 @@
     <div class="hero-inner">
       <div class="hero-tag">FIFA WORLD CUP · USA · KANADA · MEXIKO</div>
       <h1 class="hero-title">VM&nbsp;<span class="yr">2026</span></h1>
-      <p class="hero-sub">Alla tider i svensk tid 🇸🇪</p>
+      <p class="hero-sub">Gänget mot bookmakern · alla tider i svensk tid 🇸🇪</p>
       <div id="countdown" class="countdown-chip">⚽ Laddar nästa match…</div>
     </div>
   </header>
@@ -92,7 +92,7 @@
       <div class="chart-wrap">
         <div class="chart-head">
           <h3>Kapitalkurva — alla spelare + index</h3>
-          <span class="chart-note">Saldo i slutet av varje dag · alla startar på 200 SEK · OMXS30 och S&amp;P 500 normaliserade till 200 · håll muspekaren/fingret över en linje för att markera den</span>
+          <span class="chart-note">Saldo i början av varje dag · alla startar på 200 SEK · OMXS30 och S&amp;P 500 normaliserade till 200 · håll muspekaren/fingret över en linje för att markera den</span>
         </div>
         <div id="index-chips" class="index-chips"></div>
         <div class="chart-box"><canvas id="moneyChart"></canvas></div>
@@ -104,11 +104,11 @@
           <h3>Fyll i ditt saldo</h3>
           <span id="backend-status" class="backend-status"></span>
         </div>
-        <p class="hint">Välj spelare och dag, skriv in hur mycket du har <strong>i slutet av dagen</strong> och spara. Du kan även skriva vad du satsade på. Fel värde? Välj samma spelare och dag igen så fylls det i — ändra och uppdatera.</p>
+        <p class="hint">Välj spelare och dag, skriv in hur mycket du har <strong>i början av dagen</strong> och spara. Du kan även skriva vad du satsade på. Fel värde? Välj samma spelare och dag igen så fylls det i — ändra och uppdatera.</p>
         <div class="submit-grid">
           <label class="fld">Spelare<select id="f-player"></select></label>
           <label class="fld">Dag<select id="f-date"></select></label>
-          <label class="fld">Saldo i slutet av dagen (SEK)<input id="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="t.ex. 250 eller 249,50"></label>
+          <label class="fld">Saldo i början av dagen (SEK)<input id="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="t.ex. 250 eller 249,50"></label>
           <button id="f-submit" class="btn btn-primary">✅ Spara</button>
         </div>
         <label class="fld fld-note">Vad satsade du på? <span class="opt">(valfritt)</span><input id="f-note" type="text" maxlength="140" placeholder="t.ex. Sverige vinner grupp F · Brasilien -1.5 · over 2.5 mål"></label>

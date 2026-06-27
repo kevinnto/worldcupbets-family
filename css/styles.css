@@ -164,7 +164,11 @@ main{max-width:var(--maxw);margin:0 auto;padding:18px 16px 40px;position:relativ
 /* ---------- groups ---------- */
 .groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
 .group-card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
-.group-card h3{font-family:'Anton',sans-serif;font-size:20px;color:var(--gold);margin-bottom:10px;letter-spacing:.03em}
+.group-card h3{font-family:'Anton',sans-serif;font-size:20px;color:var(--gold);margin-bottom:10px;letter-spacing:.03em;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gbadge{font-family:'Inter',system-ui,sans-serif;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;letter-spacing:.02em;white-space:nowrap}
+.gbadge.done{background:var(--good);color:#062b1c;border:0}
+.gbadge.prog{background:var(--input-bg);color:var(--muted);border:1px solid var(--hairline)}
+.group-card.done{border-color:var(--good)}
 .gtable{width:100%;border-collapse:collapse;font-size:13px}
 .gtable th{color:var(--muted);font-weight:700;text-align:right;padding:4px 5px;font-size:11px;border-bottom:1px solid var(--line)}
 .gtable th.tl,.gtable td.tl{text-align:left}

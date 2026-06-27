@@ -1,36 +1,6 @@
 {
-  "updated": "2026-06-20T06:38:46Z",
+  "updated": null,
   "symbol": "^OMX",
   "note": "OMX Stockholm 30 daily close, fetched from Stooq by GitHub Actions. Normalised to 200 client-side.",
-  "history": [
-    {
-      "date": "2026-06-10",
-      "close": 3054.042724609375
-    },
-    {
-      "date": "2026-06-11",
-      "close": 3064.415771484375
-    },
-    {
-      "date": "2026-06-12",
-      "close": 3113.569580078125
-    },
-    {
-      "date": "2026-06-15",
-      "close": 3156.194091796875
-    },
-    {
-      "date": "2026-06-16",
-      "close": 3141.631591796875
-    },
-    {
-      "date": "2026-06-17",
-      "close": 3161.292236328125
-    },
-    {
-      "date": "2026-06-18",
-      "close": 3178.63916015625
-    }
-  ],
-  "checked": "2026-06-20T06:38:46Z"
+  "history": []
 }

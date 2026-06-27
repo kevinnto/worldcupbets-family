@@ -36,7 +36,7 @@ ALIASES = {
     "unitedstates": "usa", "unitedstatesofamerica": "usa",
     "ivorycoast": "cotedivoire",
     "drcongo": "congodr", "democraticrepublicofthecongo": "congodr", "dccongo": "congodr",
-    "capeverde": "caboverde",
+    "capeverde": "caboverde", "capeverdeislands": "caboverde", "capeverdeisland": "caboverde",
     "bosniaandherzegovina": "bosnia", "bosniaherzegovina": "bosnia", "bosniahercegovina": "bosnia",
     "czechrepublic": "czechia",
 }
@@ -189,7 +189,7 @@ def ko_winner_loser(entry, home, away):
     return (None, None)
 
 
-def match_knockouts(fixtures, results, games, to_code):
+def match_knockouts(fixtures, results, games, to_code, exclude=None):
     standings = group_standings(fixtures, results)
     resolved = {}  # mid -> (home_code, away_code)
     for mid, e in results["matches"].items():
@@ -219,7 +219,8 @@ def match_knockouts(fixtures, results, games, to_code):
         return None
 
     ko = sorted([m for m in fixtures["matches"] if m["stage"] == "KO"], key=lambda x: x["no"])
-    used = set()
+    ko_start = min((m["kickoff"][:10] for m in ko), default="9999")  # first R32 date
+    used = set(exclude or ())  # games already consumed by group matching are off-limits
     count = 0
     for m in ko:
         hc, ac = ref_code(m["homeRef"]), ref_code(m["awayRef"])
@@ -229,6 +230,8 @@ def match_knockouts(fixtures, results, games, to_code):
         for i, g in enumerate(games):
             if i in used:
                 continue
+            if (g.get("date") or "") < ko_start:
+                continue  # a group-stage game can never be a knockout game
             gh, ga = to_code(g["home"]), to_code(g["away"])
             if not gh or not ga:
                 continue
@@ -282,7 +285,8 @@ def update_results(fixtures):
 
     # group stage: matched by fixed teams + date
     gcount = 0
-    for g in games:
+    gused = set()
+    for i, g in enumerate(games):
         mid = match_id(exact, loose, g["home"], g["away"], g["date"])
         if not mid:
             continue
@@ -290,10 +294,15 @@ def update_results(fixtures):
         if "hpen" in g:
             entry["homePens"] = g["hpen"]; entry["awayPens"] = g["apen"]
         results["matches"][mid] = entry
+        gused.add(i)
         gcount += 1
 
-    # knockout stage: resolve bracket from results, store score + actual teams
-    kcount = match_knockouts(fixtures, results, games, to_code)
+    # knockout stage: fully DERIVED each run. Clear any stored KO entries first so the
+    # bracket self-corrects as group standings finalise and stale/phantom rows are dropped.
+    for m in fixtures["matches"]:
+        if m["stage"] == "KO":
+            results["matches"].pop(m["id"], None)
+    kcount = match_knockouts(fixtures, results, games, to_code, exclude=gused)
 
     results["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     with open(RESULTS, "w", encoding="utf-8") as f:

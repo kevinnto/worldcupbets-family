@@ -282,8 +282,12 @@ function renderGroups() {
         <td class="pts">${t.pts}</td>
       </tr>`;
     }).join('');
-    return `<div class="group-card">
-      <h3>Grupp ${g}</h3>
+    const done = st.complete;
+    const badge = done
+      ? '<span class="gbadge done">✓ Färdigspelad</span>'
+      : `<span class="gbadge prog">${st.played}/${st.total} spelade</span>`;
+    return `<div class="group-card${done ? ' done' : ''}">
+      <h3><span>Grupp ${g}</span>${badge}</h3>
       <table class="gtable">
         <thead><tr><th class="tl">Lag</th><th>S</th><th>V</th><th>O</th><th>F</th><th>Mål</th><th>+/−</th><th>P</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -321,27 +325,37 @@ function bracketTie(m, standings, cls = '') {
   </div>`;
 }
 
-// which half a knockout match belongs to (left feeds SF m101, right feeds m102)
-function koSide(m) {
-  if (m.roundKey === 'FINAL' || m.roundKey === '3RD') return 'C';
-  const n = m.no;
-  if (m.roundKey === 'R32') return n <= 80 ? 'L' : 'R';
-  if (m.roundKey === 'R16') return n <= 92 ? 'L' : 'R';
-  if (m.roundKey === 'QF') return n <= 98 ? 'L' : 'R';
-  return n === 101 ? 'L' : 'R'; // SF
+// feeders of a KO match (the two matches whose winners contest it); null for R32 leaves
+function koFeeders(m, byNo) {
+  return [m.homeRef, m.awayRef].map(r => /^W\d+$/.test(r) ? byNo[+r.slice(1)] : null);
+}
+// R32 matches (leaves) beneath a match, in bracket (top-to-bottom) order
+function koLeaves(m, byNo) {
+  if (m.roundKey === 'R32') return [m.no];
+  return koFeeders(m, byNo).flatMap(f => f ? koLeaves(f, byNo) : []);
 }
 
-// DESKTOP: two halves converging on a centred final
+// DESKTOP: two halves converging on a centred final, laid out by the ACTUAL bracket tree
+// (each column ordered by the feeds, so feeders sit next to what they feed).
 function bracketConverging(standings) {
   const kos = DATA.fixtures.matches.filter(m => m.stage === 'KO');
-  const half = (sideKey, order) => order.map(([key, label]) => {
-    const list = kos.filter(m => m.roundKey === key && koSide(m) === sideKey).sort((a, b) => a.no - b.no);
-    const slots = list.map(m => `<div class="bslot">${bracketTie(m, standings)}</div>`).join('');
-    return `<div class="bcol col-${key.toLowerCase()}"><div class="bcol-title">${label}</div><div class="bcol-slots">${slots}</div></div>`;
-  }).join('');
+  const byNo = {}; kos.forEach(m => byNo[m.no] = m);
+  const sf = kos.filter(m => m.roundKey === 'SF').sort((a, b) => a.no - b.no);
+  const half = (sfMatch, order) => {
+    const leafOrder = koLeaves(sfMatch, byNo);            // R32 numbers, top -> bottom
+    const inHalf = new Set(leafOrder);
+    const pos = no => leafOrder.indexOf(no);
+    return order.map(([key, label]) => {
+      const list = kos.filter(m => m.roundKey === key
+        && koLeaves(m, byNo).length && koLeaves(m, byNo).every(l => inHalf.has(l)));
+      list.sort((a, b) => pos(koLeaves(a, byNo)[0]) - pos(koLeaves(b, byNo)[0]));
+      const slots = list.map(m => `<div class="bslot">${bracketTie(m, standings)}</div>`).join('');
+      return `<div class="bcol col-${key.toLowerCase()}"><div class="bcol-title">${label}</div><div class="bcol-slots">${slots}</div></div>`;
+    }).join('');
+  };
   const order = [['R32', 'Sextondel'], ['R16', 'Åttondel'], ['QF', 'Kvart'], ['SF', 'Semi']];
-  const left = half('L', order);
-  const right = half('R', order.slice().reverse());
+  const left = half(sf[0], order);
+  const right = half(sf[1], order.slice().reverse());
   const finalM = kos.find(m => m.roundKey === 'FINAL');
   const bronze = kos.find(m => m.roundKey === '3RD');
   const center = `<div class="bcol bcol-center">
@@ -386,7 +400,7 @@ function tournamentDays() {
   const start = ms[0], end = ms[ms.length - 1];
   const out = [];
   let d = new Date(new Date(start + 'T12:00:00').getTime() - 864e5); // day before kickoff = 200 baseline
-  const endD = new Date(end + 'T12:00:00');
+  const endD = new Date(new Date(end + 'T12:00:00').getTime() + 864e5); // +1 day: log final standings the morning after the final
   while (d <= endD) { out.push(swKey.format(d)); d = new Date(d.getTime() + 864e5); }
   return out;
 }

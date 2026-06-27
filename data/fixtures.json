@@ -245,18 +245,78 @@
     }
   },
   "groups": {
-    "A": ["MEX", "RSA", "KOR", "CZE"],
-    "B": ["CAN", "BIH", "QAT", "SUI"],
-    "C": ["BRA", "MAR", "HAI", "SCO"],
-    "D": ["USA", "PAR", "AUS", "TUR"],
-    "E": ["GER", "CUW", "CIV", "ECU"],
-    "F": ["NED", "JPN", "SWE", "TUN"],
-    "G": ["BEL", "EGY", "IRN", "NZL"],
-    "H": ["ESP", "CPV", "KSA", "URU"],
-    "I": ["FRA", "SEN", "IRQ", "NOR"],
-    "J": ["ARG", "ALG", "AUT", "JOR"],
-    "K": ["POR", "COD", "UZB", "COL"],
-    "L": ["ENG", "CRO", "GHA", "PAN"]
+    "A": [
+      "MEX",
+      "RSA",
+      "KOR",
+      "CZE"
+    ],
+    "B": [
+      "CAN",
+      "BIH",
+      "QAT",
+      "SUI"
+    ],
+    "C": [
+      "BRA",
+      "MAR",
+      "HAI",
+      "SCO"
+    ],
+    "D": [
+      "USA",
+      "PAR",
+      "AUS",
+      "TUR"
+    ],
+    "E": [
+      "GER",
+      "CUW",
+      "CIV",
+      "ECU"
+    ],
+    "F": [
+      "NED",
+      "JPN",
+      "SWE",
+      "TUN"
+    ],
+    "G": [
+      "BEL",
+      "EGY",
+      "IRN",
+      "NZL"
+    ],
+    "H": [
+      "ESP",
+      "CPV",
+      "KSA",
+      "URU"
+    ],
+    "I": [
+      "FRA",
+      "SEN",
+      "IRQ",
+      "NOR"
+    ],
+    "J": [
+      "ARG",
+      "ALG",
+      "AUT",
+      "JOR"
+    ],
+    "K": [
+      "POR",
+      "COD",
+      "UZB",
+      "COL"
+    ],
+    "L": [
+      "ENG",
+      "CRO",
+      "GHA",
+      "PAN"
+    ]
   },
   "matches": [
     {
@@ -1456,8 +1516,8 @@
       "roundKey": "QF",
       "group": null,
       "kickoff": "2026-07-10T19:00:00Z",
-      "homeRef": "W91",
-      "awayRef": "W92",
+      "homeRef": "W93",
+      "awayRef": "W94",
       "venue": "SoFi Stadium",
       "city": "Inglewood"
     },
@@ -1469,8 +1529,8 @@
       "roundKey": "QF",
       "group": null,
       "kickoff": "2026-07-11T21:00:00Z",
-      "homeRef": "W93",
-      "awayRef": "W94",
+      "homeRef": "W91",
+      "awayRef": "W92",
       "venue": "Hard Rock Stadium",
       "city": "Miami"
     },
