@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-07T16:08:12Z",
+  "updated": "2026-07-07T18:15:06Z",
   "note": "Auto-populated daily by GitHub Actions. You can also edit scores here by hand: \"m1\": {\"homeScore\": 2, \"awayScore\": 1, \"status\": \"FINISHED\"}. roundKey winners also resolve knockout slots.",
   "matches": {
     "m1": {
@@ -523,9 +523,9 @@
       "away": "BEL"
     },
     "m95": {
-      "homeScore": 0,
-      "awayScore": 0,
-      "status": "IN_PLAY",
+      "homeScore": 3,
+      "awayScore": 2,
+      "status": "FINISHED",
       "home": "ARG",
       "away": "EGY"
     }
