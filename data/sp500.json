@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-19T20:32:18Z",
+  "updated": "2026-07-20T18:23:40Z",
   "symbol": "^SPX",
   "note": "S&P 500 daily close, fetched from Stooq by GitHub Actions. Normalised to 200 client-side.",
   "history": [
@@ -106,7 +106,11 @@
     {
       "date": "2026-07-17",
       "close": 7457.68994140625
+    },
+    {
+      "date": "2026-07-20",
+      "close": 7472.259765625
     }
   ],
-  "checked": "2026-07-19T20:32:18Z"
+  "checked": "2026-07-20T18:23:40Z"
 }
